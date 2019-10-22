@@ -11,11 +11,31 @@ import PhysijsWorker from 'physijs-webpack/physijs_worker';
 
 let boxes = []
 
+const notes = []
+
+const directionalImpulse = () => 1 - (Math.random() * 2)
+
+function isMidiNoteBlack(num){
+  const keys = [0,1,0,1,0,0,1,0,1,0,1,0]
+  let idx = (num + 12) % 12
+  return !!keys[idx]
+}
 
 function onMIDIMessage( event ) {
-  const [channel, note, velocity] = event.data
-  if (velocity === 0) onNoteOff(note)
-  else onNoteOn(note, velocity)
+  const [something, note, velocity] = event.data
+  if (velocity === 0) {
+    if (notes[note] === true) {
+      onNoteOff(note)
+      notes[note] = false
+    }
+  }
+  else {
+    if (note === 1) return
+    if (notes[note] === undefined || notes[note] === false) {
+      onNoteOn(note, velocity)
+      notes[note] = true
+    }
+  }
 }
 
 
@@ -37,6 +57,7 @@ var restitution = 0.2; // low restitution
 let initScene, render, renderer, scene, camera, box, floor, composer;
 
 function onNoteOn(note, velocity){
+  console.log('note on,', boxes, note)
   const boxVectorY = 1000 + ((velocity / 128 ) * 2000)
   boxes[note].model.applyCentralImpulse(new THREE.Vector3(0, boxVectorY, 0))
   boxes[note].model.material.emissive = boxes[note].color
@@ -78,11 +99,11 @@ initScene = function init() {
   scene.add( camera );
   
   floor = new Physijs.BoxMesh(
-    new THREE.BoxGeometry(100, 1, 100),
+    new THREE.BoxGeometry(1000, 1, 1000),
     new THREE.MeshStandardMaterial({ color: 0x666666, colorWrite: false }),
     0
   )
-  floor.position.set(0, -6, 0)
+  floor.position.set(0, -3, 0)
   
   
   scene.add( floor );
@@ -100,15 +121,16 @@ initScene = function init() {
   
 
   
-  let start = 43
-  for (let i = start; i < start + 12; i++ ) {
+  let start = 48
+  let size = 5
+  for (let i = start; i < 72; i++ ) {
     const colors = [new THREE.Color(1, 0, 0), new THREE.Color(0, 1, 0), new THREE.Color(0, 0, 1)]
     
     let color = colors[i%3]
     let box = {
       color,
       model: new Physijs.BoxMesh(
-        new THREE.CubeGeometry( 5, 5, 5 ),
+        new THREE.CubeGeometry( size, size, size ),
         Physijs.createMaterial(
           new THREE.MeshStandardMaterial({ color: new THREE.Color(0.5, 0.5, 0.5), emissive: new THREE.Color(0, 0, 0), }),
           friction,
@@ -116,12 +138,19 @@ initScene = function init() {
         ),
         50,
       ),
-      state: {
-
+      initialPosition: {
+        x: ((size + 1) * ((i - start - 15))),
+        y: 0,
+        z: 0
       }
     }
+    box.model.position.set(
+      box.initialPosition.x,
+      box.initialPosition.y,
+      box.initialPosition.z
+    )
     boxes[i] = box
-    box.model.position.set(((i - start - 5) * 6), 0, 0)
+
     scene.add( box.model );
   }
   
