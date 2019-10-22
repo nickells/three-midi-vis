@@ -1,11 +1,10 @@
-const THREE = require('three');
+/* global THREE */
+/* global Physijs */
 
-import Physijs from 'physijs-webpack';
-import PhysijsWorker from 'physijs-webpack/physijs_worker';
+var OrbitControls = require('three-orbit-controls')(THREE)
 
-let state = {
-  
-}
+Physijs.scripts.ammo = '/scripts/ammo.js';
+Physijs.scripts.worker = '/scripts/Physijs_worker.js';
 
 
 function onMIDIMessage( event ) {
@@ -29,16 +28,17 @@ var friction = 0.8; // high friction
 var restitution = 0.2; // low restitution
 
 var material = Physijs.createMaterial(
-    new THREE.MeshPhongMaterial({ color: 0x888888 }),
+    new THREE.MeshStandardMaterial({ color: 0x888888, emissive: 0xFFFFFF, }),
     friction,
     restitution
 );
 
 
-let initScene, render, renderer, scene, camera, box, floor;
+let initScene, render, renderer, scene, camera, box, floor, composer;
 
-function onNoteOn(){
-  box.applyCentralImpulse(new THREE.Vector3(0, 1200, 0))
+function onNoteOn(note, velocity){
+  const boxVectorY = 500 + ((velocity / 128 ) * 1500)
+  box.applyCentralImpulse(new THREE.Vector3(0, boxVectorY, 0))
 }
 
 function onNoteOff() {
@@ -48,12 +48,15 @@ function onNoteOff() {
 initScene = function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.toneMapping = THREE.ReinhardToneMapping;
+  renderer.shadowMap.enabled = true;
+
   document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   
   scene = new Physijs.Scene;
-  scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+  scene.setGravity(new THREE.Vector3( 0, -100, 0 ));
 
-  
   camera = new THREE.PerspectiveCamera(
     35,
     window.innerWidth / window.innerHeight,
@@ -62,6 +65,8 @@ initScene = function init() {
   );
   camera.position.set( 60, 50, 60 );
   camera.lookAt( scene.position );
+  const controls = new OrbitControls( camera, renderer.domElement );
+
   scene.add( camera );
   
   // Box
@@ -70,27 +75,53 @@ initScene = function init() {
     material,
     50,
   );
+  box.castShadow = true
 
   floor = new Physijs.BoxMesh(
     new THREE.BoxGeometry(50, 2, 50),
-    new THREE.MeshPhongMaterial({ color: 0x444444 }),
+    new THREE.MeshStandardMaterial({ color: 0x444444 }),
     0
   )
   floor.position.set(0, -6, 0)
+
+  floor.receiveShadow = true
   
   scene.add( floor );
   scene.add( box );
   // White directional light at half intensity shining from the top.
-  var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-  directionalLight.position.set(0, 5, 5)
-  scene.add( directionalLight );
+  var pointLight = new THREE.PointLight( 0xffffff, 0.8 );
+  pointLight.position.set(10, 20, 10)
+  pointLight.castShadow = true
+
+  var ambientLight = new THREE.AmbientLight( 0xffffff, 0.8 );
+
+  scene.add( pointLight );
+  // scene.add( ambientLight );
+
+  var renderScene = new THREE.RenderPass( scene, camera );
+  var bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 1.0, 0.85 );
+  composer = new THREE.EffectComposer( renderer );
+  composer.addPass( renderScene );
+  composer.addPass( bloomPass );
   
   requestAnimationFrame( render );
 };
 
+
+window.onresize = function () {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize( width, height );
+  composer.setSize( width, height );
+};
+
+
 render = function() {
   scene.simulate(); // run physics
   renderer.render( scene, camera); // render the scene
+  composer.render();
   requestAnimationFrame( render );
 };
 
