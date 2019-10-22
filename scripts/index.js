@@ -1,10 +1,16 @@
-/* global THREE */
-/* global Physijs */
+const THREE = require('three');
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 var OrbitControls = require('three-orbit-controls')(THREE)
 
-Physijs.scripts.ammo = '/scripts/ammo.js';
-Physijs.scripts.worker = '/scripts/Physijs_worker.js';
+import Physijs from 'physijs-webpack';
+import PhysijsWorker from 'physijs-webpack/physijs_worker';
+
+let state = {
+  
+}
 
 
 function onMIDIMessage( event ) {
@@ -48,15 +54,10 @@ function onNoteOff() {
 initScene = function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize( window.innerWidth, window.innerHeight );
-  renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.toneMapping = THREE.ReinhardToneMapping;
-  renderer.shadowMap.enabled = true;
-
-  document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   
+  renderer.shadowMap.enabled = true;
   scene = new Physijs.Scene;
-  scene.setGravity(new THREE.Vector3( 0, -100, 0 ));
-
+  
   camera = new THREE.PerspectiveCamera(
     35,
     window.innerWidth / window.innerHeight,
@@ -65,6 +66,18 @@ initScene = function init() {
   );
   camera.position.set( 60, 50, 60 );
   camera.lookAt( scene.position );
+  
+  document.getElementById( 'viewport' ).appendChild( renderer.domElement );
+  var renderScene = new RenderPass( scene, camera );
+  var bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+  
+  composer = new EffectComposer( renderer );
+  composer.addPass( renderScene );
+  composer.addPass( bloomPass );
+  
+  scene.setGravity(new THREE.Vector3( 0, -100, 0 ));
+
+  
   const controls = new OrbitControls( camera, renderer.domElement );
 
   scene.add( camera );
@@ -97,30 +110,12 @@ initScene = function init() {
 
   scene.add( pointLight );
   // scene.add( ambientLight );
-
-  var renderScene = new THREE.RenderPass( scene, camera );
-  var bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 1.0, 0.85 );
-  composer = new THREE.EffectComposer( renderer );
-  composer.addPass( renderScene );
-  composer.addPass( bloomPass );
   
   requestAnimationFrame( render );
 };
 
-
-window.onresize = function () {
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize( width, height );
-  composer.setSize( width, height );
-};
-
-
 render = function() {
   scene.simulate(); // run physics
-  renderer.render( scene, camera); // render the scene
   composer.render();
   requestAnimationFrame( render );
 };
