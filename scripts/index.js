@@ -10,8 +10,7 @@ import PhysijsWorker from 'physijs-webpack/physijs_worker';
 
 
 let boxes = []
-
-const notes = []
+let notes = []
 
 const directionalImpulse = () => 1 - (Math.random() * 2)
 
@@ -56,15 +55,42 @@ var restitution = 0.2; // low restitution
 
 let initScene, render, renderer, scene, camera, box, floor, composer;
 
+
+
+const distance = 1
 function onNoteOn(note, velocity){
-  console.log('note on,', boxes, note)
-  const boxVectorY = 1000 + ((velocity / 128 ) * 2000)
-  boxes[note].model.applyCentralImpulse(new THREE.Vector3(0, boxVectorY, 0))
-  boxes[note].model.material.emissive = boxes[note].color
+  // const boxVectorY = 1000 + ((velocity / 128 ) * 2000)
+  // boxes[note].mesh.applyCentralImpulse(new THREE.Vector3(0, boxVectorY, 0))
+  
+  boxes[note].on = true
+  boxes[note].mesh.material.emissive = boxes[note].color
+  boxes[note].mesh.material.opacity = 0.5 + (velocity / 128)
+
+}
+
+function grow(box) {
+  let length =  new THREE.Box3().setFromObject( box.mesh ).getSize().z
+  
+  const desiredLength = length + distance
+  const scale = desiredLength / length
+  
+  box.mesh.applyMatrix(new THREE.Matrix4().makeScale(1, 1, scale ))
+  box.mesh.position.z = (-desiredLength / 2)
+}
+
+function reset(box) {
+  let length =  new THREE.Box3().setFromObject( box.mesh ).getSize().z
+  const desiredLength = 5
+  const scale = desiredLength / length
+  box.mesh.applyMatrix(new THREE.Matrix4().makeScale(1, 1, scale ))
+  box.mesh.position.z = (box.initialPosition.z)
 }
 
 function onNoteOff(note) {
-  boxes[note].model.material.emissive = new THREE.Color(0, 0, 0)
+  boxes[note].mesh.material.emissive = new THREE.Color(0, 0, 0)
+  boxes[note].mesh.material.opacity = 0.2
+  boxes[note].on = false
+  reset(boxes[note])
   // box.setLinearVelocity(new THREE.Vector3(0, 0, 0))
 }
 
@@ -107,10 +133,6 @@ initScene = function init() {
   
   
   scene.add( floor );
-  // White directional light at half intensity shining from the top.
-  // var pointLight = new THREE.PointLight( 0xffffff, 0.8 );
-  // pointLight.position.set(10, 20, 10)
-  // pointLight.castShadow = true
   
   var ambientLight = new THREE.AmbientLight( 0xffffff, 0.8 );
   
@@ -119,20 +141,24 @@ initScene = function init() {
 
   // The fun stuff
   
-
-  
   let start = 48
   let size = 5
-  for (let i = start; i < 72; i++ ) {
+  for (let i = start; i < 84; i++ ) {
     const colors = [new THREE.Color(1, 0, 0), new THREE.Color(0, 1, 0), new THREE.Color(0, 0, 1)]
     
     let color = colors[i%3]
     let box = {
+      on: false,
       color,
-      model: new Physijs.BoxMesh(
+      mesh: new Physijs.BoxMesh(
         new THREE.CubeGeometry( size, size, size ),
         Physijs.createMaterial(
-          new THREE.MeshStandardMaterial({ color: new THREE.Color(0.5, 0.5, 0.5), emissive: new THREE.Color(0, 0, 0), }),
+          new THREE.MeshStandardMaterial({ 
+            color: new THREE.Color(0.5, 0.5, 0.5),
+            emissive: new THREE.Color(0, 0, 0),
+            transparent: true,
+            opacity: 0.2
+          }),
           friction,
           restitution
         ),
@@ -141,25 +167,31 @@ initScene = function init() {
       initialPosition: {
         x: ((size + 1) * ((i - start - 15))),
         y: 0,
-        z: 0
-      }
+        z: -size / 2
+      },
+      
     }
-    box.model.position.set(
+    box.currentPosition = { ...box.initialPosition }
+    box.mesh.position.set(
       box.initialPosition.x,
       box.initialPosition.y,
       box.initialPosition.z
     )
     boxes[i] = box
 
-    scene.add( box.model );
+    scene.add( box.mesh );
+
   }
   
   requestAnimationFrame( render );
 };
 
 render = function() {
-  scene.simulate(); // run physics
+  // scene.simulate(); // run physics
   composer.render();
+  boxes.forEach(box => {
+    if (box.on) grow(box)
+  })
   requestAnimationFrame( render );
 };
 
