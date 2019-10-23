@@ -68,11 +68,11 @@ initScene = function init() {
     1000
   );
   camera.position.set( 60, 50, 60 );
-  camera.lookAt( scene.position );
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
   
   document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   var renderScene = new RenderPass( scene, camera );
-  var bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.8, 0.4, 0.0 );
+  var bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.0, 0.4, 0.0 );
   
   composer = new EffectComposer( renderer );
   composer.addPass( renderScene );

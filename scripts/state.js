@@ -19,7 +19,7 @@ export const createBox = (params, note) => {
     placeholder: true,
     color: colors[note%3],
     initialPosition: {
-      x: ((size + 1) * ((note - 0 - 15))),
+      x: ((size + 1) * ((note - 50))),
       y: 0,
       z: -size / 2
     },
@@ -40,7 +40,7 @@ export const createBox = (params, note) => {
 }
   
 export const populateNotes = () => {
-  for (let i = 0; i < 128; i++ ) {
+  for (let i = 21; i < 108; i++ ) {
     const box = createBox({}, i)
   
     // Each note array is an array of notes over time
