@@ -31,7 +31,7 @@ function onMIDIMessage( event ) {
     }
   }
   else {
-    if (note > 1) return
+    if (note <= 1) return
     if (midiInput[note] === undefined || midiInput[note] === false) {
       onNoteOn(note, velocity)
       midiInput[note] = true
