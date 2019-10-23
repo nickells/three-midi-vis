@@ -51,7 +51,8 @@ listen()
 
 
 export let scene
-let initScene, render, renderer, camera, floor, composer;
+export let camera
+let initScene, render, renderer, floor, composer;
 
 
 initScene = function init() {
@@ -89,6 +90,8 @@ initScene = function init() {
     new THREE.MeshStandardMaterial({ color: 0x666666, colorWrite: false }),
     0
   )
+  var gridHelper = new THREE.GridHelper( 200, 10 );
+  scene.add( gridHelper );
   floor.position.set(0, -3, 0)
   
   scene.add( floor );
