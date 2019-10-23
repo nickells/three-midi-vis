@@ -6,11 +6,11 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 var OrbitControls = require('three-orbit-controls')(THREE)
 
 import Physijs from 'physijs-webpack';
-import PhysijsWorker from 'physijs-webpack/physijs_worker';
+import { populateNotes, notes } from './state';
+import { onNoteOn, onNoteOff, tick } from './logic'
 
 
 let boxes = []
-let notes = []
 
 const directionalImpulse = () => 1 - (Math.random() * 2)
 
@@ -20,23 +20,24 @@ function isMidiNoteBlack(num){
   return !!keys[idx]
 }
 
+// a debouncer for midi signals
+const midiInput = []
 function onMIDIMessage( event ) {
   const [something, note, velocity] = event.data
   if (velocity === 0) {
-    if (notes[note] === true) {
+    if (midiInput[note] === true) {
       onNoteOff(note)
-      notes[note] = false
+      midiInput[note] = false
     }
   }
   else {
-    if (note === 1) return
-    if (notes[note] === undefined || notes[note] === false) {
+    if (note > 1) return
+    if (midiInput[note] === undefined || midiInput[note] === false) {
       onNoteOn(note, velocity)
-      notes[note] = true
+      midiInput[note] = true
     }
   }
 }
-
 
 async function listen(){
   let midiAccess = await navigator.requestMIDIAccess( { sysex: true } )
@@ -48,51 +49,10 @@ async function listen(){
 
 listen()
 
-var friction = 0.8; // high friction
-var restitution = 0.2; // low restitution
 
+export let scene
+let initScene, render, renderer, camera, floor, composer;
 
-
-let initScene, render, renderer, scene, camera, box, floor, composer;
-
-
-
-const distance = 1
-function onNoteOn(note, velocity){
-  // const boxVectorY = 1000 + ((velocity / 128 ) * 2000)
-  // boxes[note].mesh.applyCentralImpulse(new THREE.Vector3(0, boxVectorY, 0))
-  
-  boxes[note].on = true
-  boxes[note].mesh.material.emissive = boxes[note].color
-  boxes[note].mesh.material.opacity = 0.5 + (velocity / 128)
-
-}
-
-function grow(box) {
-  let length =  new THREE.Box3().setFromObject( box.mesh ).getSize().z
-  
-  const desiredLength = length + distance
-  const scale = desiredLength / length
-  
-  box.mesh.applyMatrix(new THREE.Matrix4().makeScale(1, 1, scale ))
-  box.mesh.position.z = (-desiredLength / 2)
-}
-
-function reset(box) {
-  let length =  new THREE.Box3().setFromObject( box.mesh ).getSize().z
-  const desiredLength = 5
-  const scale = desiredLength / length
-  box.mesh.applyMatrix(new THREE.Matrix4().makeScale(1, 1, scale ))
-  box.mesh.position.z = (box.initialPosition.z)
-}
-
-function onNoteOff(note) {
-  boxes[note].mesh.material.emissive = new THREE.Color(0, 0, 0)
-  boxes[note].mesh.material.opacity = 0.2
-  boxes[note].on = false
-  reset(boxes[note])
-  // box.setLinearVelocity(new THREE.Vector3(0, 0, 0))
-}
 
 initScene = function init() {
   renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -131,7 +91,6 @@ initScene = function init() {
   )
   floor.position.set(0, -3, 0)
   
-  
   scene.add( floor );
   
   var ambientLight = new THREE.AmbientLight( 0xffffff, 0.8 );
@@ -140,58 +99,18 @@ initScene = function init() {
   
 
   // The fun stuff
-  
-  let start = 48
-  let size = 5
-  for (let i = start; i < 84; i++ ) {
-    const colors = [new THREE.Color(1, 0, 0), new THREE.Color(0, 1, 0), new THREE.Color(0, 0, 1)]
-    
-    let color = colors[i%3]
-    let box = {
-      on: false,
-      color,
-      mesh: new Physijs.BoxMesh(
-        new THREE.CubeGeometry( size, size, size ),
-        Physijs.createMaterial(
-          new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(0.5, 0.5, 0.5),
-            emissive: new THREE.Color(0, 0, 0),
-            transparent: true,
-            opacity: 0.2
-          }),
-          friction,
-          restitution
-        ),
-        50,
-      ),
-      initialPosition: {
-        x: ((size + 1) * ((i - start - 15))),
-        y: 0,
-        z: -size / 2
-      },
-      
-    }
-    box.currentPosition = { ...box.initialPosition }
-    box.mesh.position.set(
-      box.initialPosition.x,
-      box.initialPosition.y,
-      box.initialPosition.z
-    )
-    boxes[i] = box
-
-    scene.add( box.mesh );
-
-  }
+  populateNotes()
+  notes.forEach(row => {
+    row.forEach(box => scene.add(box.mesh))
+  })
   
   requestAnimationFrame( render );
 };
 
-render = function() {
+render = function(ms) {
   // scene.simulate(); // run physics
   composer.render();
-  boxes.forEach(box => {
-    if (box.on) grow(box)
-  })
+  tick(ms)
   requestAnimationFrame( render );
 };
 
