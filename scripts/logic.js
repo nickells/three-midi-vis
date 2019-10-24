@@ -3,9 +3,33 @@ const THREE = require('three')
 import TWEEN from '@tweenjs/tween.js'
 
 import { scene, camera } from './index'
+import { speed, cameraPos } from './consts'
 
 const clamp = (min, max, val) => Math.min(Math.max(val, min), max)
 
+
+let lastAverage = 0
+const updateCamera = () => {
+  let positions = notes
+    .map(row => row[0])
+    .filter( box => box && box.active)
+    .map(box => box.mesh.position.x)
+    
+  let averagePosition = (positions.reduce((sum, curr) => sum + curr, 0) / positions.length) || lastAverage
+  let rangeModifier = Math.max((Math.max(...positions) - Math.min(...positions)) * 0.2, 0)
+  lastAverage = averagePosition
+
+  let y = cameraPos.y + rangeModifier
+  let z = cameraPos.z + rangeModifier
+  new TWEEN.Tween( camera.position )
+    .to( new THREE.Vector3(averagePosition, y, z), 400 )
+    .easing( TWEEN.Easing.Cubic.Out)
+    .onUpdate( (val) => {
+      camera.position.copy(val)
+    })
+    .start();
+
+}
 
 export function onNoteOn (note, velocity){
   // const boxVectorY = 1000 + ((velocity / 128 ) * 2000)
@@ -23,18 +47,10 @@ export function onNoteOn (note, velocity){
   notes[note].unshift(newBox)
   newBox.mesh.position.set(newBox.initialPosition.x, newBox.initialPosition.y, newBox.initialPosition.z)
   scene.add(newBox.mesh)
-  
-  new TWEEN.Tween( camera.position )
-    .to( new THREE.Vector3(newBox.mesh.position.x, 30, 40), 400 )
-    .easing( TWEEN.Easing.Cubic.InOut)
-    .onUpdate( (val) => {
-      camera.position.copy(val)
-    })
-    .start();
-
+  updateCamera()
 }
 
-const SPEED = 3
+
 
 function grow(box) {
   let boxSize = new THREE.Vector3()
@@ -42,7 +58,7 @@ function grow(box) {
 
   let length = boxSize.z
 
-  const desiredLength = length + SPEED
+  const desiredLength = length + speed
   const scale = desiredLength / length
 
   box.mesh.applyMatrix(new THREE.Matrix4().makeScale(1, 1, scale ))
@@ -50,7 +66,7 @@ function grow(box) {
 }
 
 function push(box) {
-  box.mesh.translateZ(-1 * SPEED)
+  box.mesh.translateZ(-1 * speed)
 }
 
 function reset(box) {
@@ -67,6 +83,7 @@ export function onNoteOff(midiNote) {
   lastNote.offTime = performance.now()
   lastNote.active = false
   lastNote.mesh.material.opacity = 0.4
+  updateCamera()
 }
 
 export function tick(ms) {

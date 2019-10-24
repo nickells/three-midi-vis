@@ -8,6 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Physijs from 'physijs-webpack';
 import { populateNotes, notes, placeholders } from './state';
 import { onNoteOn, onNoteOff, tick } from './logic'
+import { speed, cameraPos } from './consts';
 
 
 let boxes = []
@@ -20,17 +21,21 @@ function isMidiNoteBlack(num){
   return !!keys[idx]
 }
 
+const textureLoaderPromise = (file) => new Promise(resolve => new THREE.TextureLoader().load(file, resolve))
+
 // a debouncer for midi signals
 const midiInput = []
 function onMIDIMessage( event ) {
-  const [something, note, velocity] = event.data
-  if (velocity === 0) {
+  const [data, note, velocity] = event.data
+  if (note === undefined && velocity === undefined) return
+  if (velocity === 0 || data === 128 ) {
     if (midiInput[note] === true) {
       onNoteOff(note)
       midiInput[note] = false
     }
   }
   else {
+    if (data !== 144) return
     if (note <= 1) return
     if (midiInput[note] === undefined || midiInput[note] === false) {
       onNoteOn(note, velocity)
@@ -52,10 +57,10 @@ listen()
 
 export let scene
 export let camera
-let initScene, render, renderer, floor, composer;
+let initScene, render, renderer, floor, composer, grid
 
 
-initScene = function init() {
+initScene = async function init() {
   renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setSize( window.innerWidth, window.innerHeight );
   
@@ -68,7 +73,8 @@ initScene = function init() {
     1,
     1000
   );
-  camera.position.set( 0, 30, 40 );
+  camera.position.set( 0, cameraPos.y, cameraPos.z );
+  camera.lookAt(new THREE.Vector3(0, 0, -60))
   
   document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   var renderScene = new RenderPass( scene, camera );
@@ -80,25 +86,33 @@ initScene = function init() {
   
   scene.setGravity(new THREE.Vector3( 0, -300, 0 ));
   
-  // const controls = new OrbitControls( camera, renderer.domElement );
-
   scene.add( camera );
   
-  floor = new Physijs.BoxMesh(
+
+  grid = await textureLoaderPromise('grid-bg.png')
+  grid.wrapS = THREE.RepeatWrapping;
+  grid.wrapT = THREE.RepeatWrapping;
+  grid.repeat.set(45, 45);
+  
+  floor = new Physijs.PlaneMesh(
     new THREE.BoxGeometry(1000, 1, 1000),
-    new THREE.MeshStandardMaterial({ color: 0x666666, colorWrite: false }),
+    new THREE.MeshStandardMaterial({
+      map: grid,
+
+      // magFilter: THREE.NearestFilter,
+      // minFilter: THREE.LinearMipMapLinearFilter,
+    }),
     0
   )
-  var gridHelper = new THREE.GridHelper( 200, 10 );
-  scene.add( gridHelper );
-  floor.position.set(0, -3, 0)
+
+  
+  floor.position.set(0, -3 , 0)
   
   scene.add( floor );
   
   var ambientLight = new THREE.AmbientLight( 0xffffff, 0.8 );
   
   scene.add( ambientLight );
-  
 
   // The fun stuff
   populateNotes()
@@ -109,10 +123,15 @@ initScene = function init() {
   requestAnimationFrame( render );
 };
 
+let gridsize = 1000 / 45
+let speedunits = speed / gridsize
+
 render = function(ms) {
   // scene.simulate(); // run physics
   composer.render();
   tick(ms)
+  grid.offset.y -= speedunits
+  grid.needsUpdate = true
   requestAnimationFrame( render );
 };
 
