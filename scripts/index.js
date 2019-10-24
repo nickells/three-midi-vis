@@ -2,6 +2,9 @@ const THREE = require('three');
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass';
+import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -79,10 +82,16 @@ initScene = async function init() {
   document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   var renderScene = new RenderPass( scene, camera );
   var bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.0, 0.4, 0.0 );
-  
+  var glitchPass = new GlitchPass();
+  var bokehPass = new BokehPass(scene, camera, {});
+  var filmPass = new FilmPass(undefined, undefined, undefined, false);
+
   composer = new EffectComposer( renderer );
   composer.addPass( renderScene );
+  composer.addPass( bokehPass );
   composer.addPass( bloomPass );
+  composer.addPass( filmPass );
+  composer.addPass( glitchPass );
   
   scene.setGravity(new THREE.Vector3( 0, -300, 0 ));
   
