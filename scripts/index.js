@@ -3,10 +3,10 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-var OrbitControls = require('three-orbit-controls')(THREE)
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import Physijs from 'physijs-webpack';
-import { populateNotes, notes } from './state';
+import { populateNotes, notes, placeholders } from './state';
 import { onNoteOn, onNoteOff, tick } from './logic'
 
 
@@ -63,13 +63,12 @@ initScene = function init() {
   scene = new Physijs.Scene;
   
   camera = new THREE.PerspectiveCamera(
-    35,
+    80,
     window.innerWidth / window.innerHeight,
     1,
     1000
   );
-  camera.position.set( 60, 50, 60 );
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
+  camera.position.set( 0, 30, 40 );
   
   document.getElementById( 'viewport' ).appendChild( renderer.domElement );
   var renderScene = new RenderPass( scene, camera );
@@ -81,7 +80,7 @@ initScene = function init() {
   
   scene.setGravity(new THREE.Vector3( 0, -300, 0 ));
   
-  const controls = new OrbitControls( camera, renderer.domElement );
+  // const controls = new OrbitControls( camera, renderer.domElement );
 
   scene.add( camera );
   
@@ -103,7 +102,7 @@ initScene = function init() {
 
   // The fun stuff
   populateNotes()
-  notes.forEach(row => {
+  placeholders.forEach(row => {
     row.forEach(box => scene.add(box.mesh))
   })
   

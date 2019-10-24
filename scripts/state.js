@@ -3,6 +3,7 @@ import Physijs from 'physijs-webpack';
 import PhysijsWorker from 'physijs-webpack/physijs_worker';
 
 export const notes = []
+export const placeholders = []
 
 const colors = [new THREE.Color(1, 0, 0), new THREE.Color(0, 1, 0), new THREE.Color(0, 0, 1)]
 
@@ -16,7 +17,6 @@ export const createBox = (params, note) => {
     active: false,
     onTime: undefined,
     offTime: undefined,
-    placeholder: true,
     color: colors[note%3],
     initialPosition: {
       x: ((size + 1) * ((note - 50))),
@@ -45,9 +45,10 @@ export const populateNotes = () => {
   
     // Each note array is an array of notes over time
     notes[i] = []
+    placeholders[i] = []
     
     // The first box will be a placeholder (for now)
-    notes[i].push(box)
+    placeholders[i].push(box)
     
     // Place the box
     box.mesh.position.set(box.initialPosition.x, box.initialPosition.y, box.initialPosition.z)
