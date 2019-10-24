@@ -19,7 +19,9 @@
     "worker-loader": "^2.0.0"
   },
   "dependencies": {
+    "@tweenjs/tween.js": "^18.3.1",
     "physijs-webpack": "^0.1.3",
-    "three": "^0.109.0"
+    "three": "^0.109.0",
+    "three-orbit-controls": "^82.1.0"
   }
 }
