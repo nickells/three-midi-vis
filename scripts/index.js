@@ -5,7 +5,6 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass';
 import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass';
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
-
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import Physijs from 'physijs-webpack';
@@ -88,10 +87,10 @@ initScene = async function init() {
 
   composer = new EffectComposer( renderer );
   composer.addPass( renderScene );
-  composer.addPass( bokehPass );
+  // composer.addPass( bokehPass );
   composer.addPass( bloomPass );
   composer.addPass( filmPass );
-  composer.addPass( glitchPass );
+  // composer.addPass( glitchPass );
   
   scene.setGravity(new THREE.Vector3( 0, -300, 0 ));
   
@@ -101,10 +100,15 @@ initScene = async function init() {
   grid = await textureLoaderPromise('grid-bg.png')
   grid.wrapS = THREE.RepeatWrapping;
   grid.wrapT = THREE.RepeatWrapping;
-  grid.repeat.set(45, 45);
+  grid.repeat.set(80, 80);
   
+  const near = 700;
+  const far = 1000;
+  const color = '#000111';
+  scene.background = new THREE.Color(color);
+
   floor = new Physijs.PlaneMesh(
-    new THREE.BoxGeometry(1000, 1, 1000),
+    new THREE.BoxGeometry(4000, 1, 4000),
     new THREE.MeshStandardMaterial({
       map: grid,
 
@@ -132,7 +136,7 @@ initScene = async function init() {
   requestAnimationFrame( render );
 };
 
-let gridsize = 1000 / 45
+let gridsize = 4000 / 80
 let speedunits = speed / gridsize
 
 render = function(ms) {

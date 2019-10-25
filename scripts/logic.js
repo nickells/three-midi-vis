@@ -51,7 +51,6 @@ export function onNoteOn (note, velocity){
 }
 
 
-
 function grow(box) {
   let boxSize = new THREE.Vector3()
   new THREE.Box3().setFromObject( box.mesh ).getSize(boxSize)
