@@ -169,7 +169,6 @@ render = function(ms) {
 };
 
 initScene()
-initHud()
 
 window.onresize = function () {
   var width = window.innerWidth;
