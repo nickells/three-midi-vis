@@ -3,9 +3,42 @@
   <style>
     body {
       margin: 0;
+      font-family: 'Futura', sans-serif;
+      text-transform: uppercase;
+    }
+
+    @keyframes hide {
+      from {
+        opacity: 0.8;
+        filter: blur(0px);
+      }
+      to {
+        opacity: 0;
+        filter: blur(10px);
+      }
+    }
+
+    #hud {
+      position: absolute;
+      color: white;
+      opacity: 0.8;
+      letter-spacing: 0.1em;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-top: 2em;
+
+      animation-name: hide;
+      animation-duration: 2000ms;
+      animation-delay: 7000ms;
+      animation-iteration-count: 1;
+      animation-fill-mode: forwards;
+      animation-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1);
+
     }
   </style>
   <body>
+    <div id="hud">play a connected midi keyboard or use your computer keyboard</div>
     <div id="viewport"></div>
     <script src="bundle.js"></script>
   </body>

@@ -52,6 +52,23 @@ async function listen(){
     entry.onmidimessage = onMIDIMessage
   });
   
+  const C = 60
+  const pianoKeys = ['a','w','s','e','d','f','t','g','y','h','u','j','k','o','l']
+  document.addEventListener('keydown', e=> {
+    const { key } = e
+    const note = pianoKeys.indexOf(key) + C
+    onMIDIMessage({
+      data: [144, note, 30]
+    })
+  })
+  document.addEventListener('keyup', e=> {
+    const { key } = e
+    const note = pianoKeys.indexOf(key) + C
+    onMIDIMessage({
+      data: [144, note, 0]
+    })
+  })
+
 }
 
 listen()
@@ -149,7 +166,7 @@ render = function(ms) {
 };
 
 initScene()
-
+initHud()
 
 window.onresize = function () {
   var width = window.innerWidth;
