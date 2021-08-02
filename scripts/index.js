@@ -52,19 +52,22 @@ async function listen(){
     entry.onmidimessage = onMIDIMessage
   });
   
+  // add keyboard functionality
   const C = 60
   const pianoKeys = ['a','w','s','e','d','f','t','g','y','h','u','j','k','o','l']
   document.addEventListener('keydown', e=> {
     const { key } = e
     const note = pianoKeys.indexOf(key) + C
-    onMIDIMessage({
+    // 59 is 60 (middle C) minus 1 (no index)
+    if (note !== 59) onMIDIMessage({
       data: [144, note, 30]
     })
   })
   document.addEventListener('keyup', e=> {
     const { key } = e
     const note = pianoKeys.indexOf(key) + C
-    onMIDIMessage({
+    // 59 is 60 (middle C) minus 1 (no index)
+    if (note !== 59) onMIDIMessage({
       data: [144, note, 0]
     })
   })
